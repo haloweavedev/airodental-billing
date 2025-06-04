@@ -733,7 +733,3 @@ For implementation details and extended documentation, refer to:
 - 🧪 [Testing Strategy](./docs/testing.md)
 
 ---
-
-**📝 Document Version:** 2.0  
-**🗓️ Last Updated:** December 2024  
-**👥 Maintainers:** Airodental Platform Team
