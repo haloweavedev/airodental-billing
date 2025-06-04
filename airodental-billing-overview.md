@@ -1,16 +1,16 @@
 # Airodental Billing System: How It Works
 
-Welcome to Airodental! We're committed to providing cutting-edge AI solutions for dental practices. To make managing your subscriptions and usage as simple and transparent as possible, we've designed a straightforward billing system. This overview explains how it works, especially for our applications like "Lane," the AI Voice Receptionist.
+Welcome to Airodental! We're committed to providing cutting-edge AI solutions for dental practices. To make managing your subscriptions and usage as simple and transparent as possible, we've designed a straightforward billing system. This overview explains how it works, especially for our applications like "Laine," the AI Voice Receptionist.
 
 ## How Subscriptions Work
 
-Getting started with an Airodental application like Lane is easy:
+Getting started with an Airodental application like Laine is easy:
 
-1.  **Choose Your Plan:** Your practice selects a plan that best fits its needs (e.g., Lane Lite or Lane Pro).
+1.  **Choose Your Plan:** Your practice selects a plan that best fits its needs (e.g., Laine Lite or Laine Pro).
 2.  **Secure Payment:** You'll be guided through a secure payment process.
 3.  **Activation:** Once payment is confirmed, your subscription is activated, and you gain immediate access to the features included in your chosen plan.
 
-Each plan typically bills monthly and comes with a set amount of resources, like included call minutes for Lane.
+Each plan typically bills monthly and comes with a set amount of resources, like included call minutes for Laine.
 
 ```mermaid
 graph TD
@@ -20,17 +20,17 @@ graph TD
     D --> E[Practice Gains Access to App Features & Included Resources];
 ```
 
-## Tracking Your Usage (Example: Lane's Voice Minutes)
+## Tracking Your Usage (Example: Laine's Voice Minutes)
 
-We keep track of your resource usage to ensure you always know where you stand. For Lane, this means tracking voice call minutes:
+We keep track of your resource usage to ensure you always know where you stand. For Laine, this means tracking voice call minutes:
 
-1.  **Call Handled:** When Lane (powered by our AI Voice Provider) handles a call for your practice, the duration is noted.
+1.  **Call Handled:** When Laine (powered by our AI Voice Provider) handles a call for your practice, the duration is noted.
 2.  **System Update:** After the call ends, the AI Voice Provider informs the Airodental system about the call's length.
 3.  **Usage Deducted:** Our system then updates your account, deducting the used minutes from your monthly allowance.
 
 ```mermaid
 graph TD
-    A[Patient Call with Lane App] --> B(AI Voice Provider Handles Call);
+    A[Patient Call with Laine App] --> B(AI Voice Provider Handles Call);
     B -- Call Concludes --> C[AI Voice Provider Reports Call Duration to Airodental];
     C --> D[Airodental System Updates Practice's Minute Usage];
     D --> E(Billing & Entitlement System Logs Usage Against Allowance);
@@ -38,7 +38,7 @@ graph TD
 
 ## Running Low on Minutes? Automatic Minute Packs
 
-We understand that your call volume can fluctuate. If your practice uses all its included monthly minutes for an application like Lane, our system is designed to help you continue service seamlessly:
+We understand that your call volume can fluctuate. If your practice uses all its included monthly minutes for an application like Laine, our system is designed to help you continue service seamlessly:
 
 *   **Automatic Top-Up:** A "Minute Pack" (e.g., 200 extra minutes for a flat fee of $50) is automatically provisioned to your account.
 *   **Immediate Billing:** Your practice is billed for this pack right away, using your payment method on file.
@@ -46,7 +46,7 @@ We understand that your call volume can fluctuate. If your practice uses all its
 
 ```mermaid
 sequenceDiagram
-    participant PracticeCall as Practice Using Lane
+    participant PracticeCall as Practice Using Laine
     participant AirodentalSystem as Airodental Platform
     participant BillingSystem as Billing & Entitlement System
 
@@ -66,7 +66,7 @@ sequenceDiagram
 
 To keep things simple and predictable:
 
-*   **Fresh Start:** At the beginning of each new monthly billing cycle, your base minute allowance (as per your Lane Lite or Lane Pro plan) is completely reset.
+*   **Fresh Start:** At the beginning of each new monthly billing cycle, your base minute allowance (as per your Laine Lite or Laine Pro plan) is completely reset.
 *   **Expiration:** Any unused minutes from the previous month—whether they were part of your base plan or from a purchased Minute Pack—will expire. This policy ensures fair resource allocation and straightforward billing.
 
 ```mermaid

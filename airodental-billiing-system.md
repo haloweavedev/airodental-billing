@@ -31,9 +31,9 @@ This document outlines the technical architecture of this system, operating with
 
 ### 💡 Example Use Case
 
-The system is exemplified by its management of applications like **"Lane,"** an AI Voice Receptionist, which offers:
+The system is exemplified by its management of applications like **"Laine,"** an AI Voice Receptionist, which offers:
 
-- 📦 Tiered plans (e.g., "Lane Lite," "Lane Pro")
+- 📦 Tiered plans (e.g., "Laine Lite," "Laine Pro")
 - ⏱️ Included monthly voice minutes  
 - 🔄 Automated minute-pack top-up mechanism
 
@@ -94,7 +94,7 @@ graph TB
 
 | Feature | Description |
 |---------|-------------|
-| **📦 Product Catalog Management** | Defining service offerings like "Lane Lite," "Lane Pro," and "Minute Top-up Packs" |
+| **📦 Product Catalog Management** | Defining service offerings like "Laine Lite," "Laine Pro," and "Minute Top-up Packs" |
 | **🔄 Subscription Lifecycle** | Complete lifecycle management (creation → cancellation) |
 | **⚖️ Feature Entitlement & Balance Tracking** | Managing feature access and consumption tracking |
 | **🔌 Service APIs** | Comprehensive API suite for backend integration |
@@ -258,8 +258,8 @@ model Subscription {
   organization            Organization @relation(fields: [organizationId], references: [id])
   
   // 📱 Application Configuration
-  application_id          String    // e.g., "lane", "scheduler_app"
-  bems_product_identifier String    // e.g., "lane_lite_monthly_v1"
+  application_id          String    // e.g., "Laine", "scheduler_app"
+  bems_product_identifier String    // e.g., "Laine_lite_monthly_v1"
   bems_subscription_id    String    @unique
   
   // 📊 Status & Billing Cycle
@@ -336,7 +336,7 @@ model VoiceAssistantConfig {
 
 ## 4. Key Billing & Entitlement Flows
 
-### 4.1. 🚀 New Application Subscription (e.g., "Lane")
+### 4.1. 🚀 New Application Subscription (e.g., "Laine")
 
 ```mermaid
 sequenceDiagram
@@ -347,7 +347,7 @@ sequenceDiagram
     participant Payment as 💳 Payment Processor
     participant AI as 🎙️ AI Voice Provider
     
-    User->>Portal: Select "Lane Lite" plan
+    User->>Portal: Select "Laine Lite" plan
     Portal->>Backend: POST /subscriptions<br/>{org_id, product_id}
     Backend->>BEMS: POST /subscriptions<br/>{customer_id, product_id}
     
@@ -369,14 +369,14 @@ sequenceDiagram
 
 #### 📋 Detailed Steps:
 
-1. **👤 User Action:** Practice admin selects plan (e.g., "Lane Lite")
+1. **👤 User Action:** Practice admin selects plan (e.g., "Laine Lite")
 
 2. **⚙️ Backend Processing:**
    ```typescript
    // Request structure
    {
      organization_id: "org_abc123",
-     bems_product_identifier: "lane_lite_monthly_v1"
+     bems_product_identifier: "Laine_lite_monthly_v1"
    }
    ```
 
@@ -388,14 +388,14 @@ sequenceDiagram
 
 6. **💾 Database Updates:**
    - Create `Subscription` record
-   - Initialize `FeatureBalance` (700 minutes for Lane Lite)
+   - Initialize `FeatureBalance` (700 minutes for Laine Lite)
    - Set usage counters to zero
 
 7. **🚀 Service Provisioning:** AI assistant instance creation
 
 ---
 
-### 4.2. 📊 Usage Tracking (e.g., "Lane" Voice Call Minutes)
+### 4.2. 📊 Usage Tracking (e.g., "Laine" Voice Call Minutes)
 
 ```mermaid
 sequenceDiagram
@@ -528,7 +528,7 @@ sequenceDiagram
     Note over DB: consumed_in_period = 0<br/>pack_allowance_current = 0<br/>last_reset_at = now()
     
     Backend->>BEMS: 🔄 Reset base allowance
-    Note over BEMS: voice_minutes = 700 (Lane Lite)
+    Note over BEMS: voice_minutes = 700 (Laine Lite)
     
     Backend-->>Backend: ✅ Renewal complete
 ```
@@ -543,7 +543,7 @@ sequenceDiagram
 
 | Endpoint | Method | Purpose | Example Payload |
 |----------|--------|---------|-----------------|
-| `/api/bems/subscriptions` | `POST` | Create subscription | `{"customer_id": "cust_123", "product_id": "lane_lite"}` |
+| `/api/bems/subscriptions` | `POST` | Create subscription | `{"customer_id": "cust_123", "product_id": "Laine_lite"}` |
 | `/api/bems/usage/track` | `POST` | Report usage | `{"customer_id": "cust_123", "feature_id": "voice_minutes", "value": 5}` |
 | `/api/bems/customers/{id}/entitlements/{feature}` | `GET` | Check balance | - |
 | `/api/bems/customers/{id}/balances` | `POST` | Set balance | `{"feature_id": "voice_minutes", "balance": 700}` |
