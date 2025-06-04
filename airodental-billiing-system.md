@@ -412,7 +412,7 @@ sequenceDiagram
     Backend->>Backend: 🔍 Find organization & subscription
     Backend->>BEMS: 📈 Track usage<br/>POST /usage/track
     
-    parallel
+    par
         Backend->>Backend: 💾 Create UsageLog entry
     and
         Backend->>Backend: 📊 Update FeatureBalance.consumed
