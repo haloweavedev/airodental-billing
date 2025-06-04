@@ -1,327 +1,739 @@
-# Airodental Platform: Billing & Entitlement System Technical Architecture
+# 🦷 Airodental Platform: Billing & Entitlement System Technical Architecture
+
+---
+
+## 📋 Table of Contents
+
+- [1. Introduction](#1-introduction)
+- [2. Core System Components](#2-core-system-components)
+- [3. Database Schema](#3-database-schema-billing--entitlement-focus)
+- [4. Key Billing & Entitlement Flows](#4-key-billing--entitlement-flows)
+- [5. API Interaction Summary](#5-api-interaction-summary-conceptual)
+- [6. Data Integrity and Synchronization](#6-data-integrity-and-synchronization)
+- [7. Security Considerations](#7-security-considerations)
+
+---
 
 ## 1. Introduction
 
-The Airodental Platform serves as the central hub for managing a suite of specialized AI-driven applications tailored for dental practices. A core component of this platform is the sophisticated Billing & Entitlement Management System (BEMS), designed to handle product subscriptions, feature entitlements, real-time usage tracking, and automated resource provisioning. This document outlines the technical architecture of this system, operating within Airodental's monorepo (Turborepo) environment.
+> **The Airodental Platform serves as the central hub for managing a suite of specialized AI-driven applications tailored for dental practices.**
 
-The system is exemplified by its management of applications like "Lane," an AI Voice Receptionist, which offers tiered plans (e.g., "Lane Lite," "Lane Pro") with included monthly voice minutes and an automated minute-pack top-up mechanism.
+### 🎯 Overview
+
+A core component of this platform is the sophisticated **Billing & Entitlement Management System (BEMS)**, designed to handle:
+
+- 🔄 Product subscriptions
+- ⚡ Feature entitlements  
+- 📊 Real-time usage tracking
+- 🤖 Automated resource provisioning
+
+This document outlines the technical architecture of this system, operating within Airodental's **monorepo (Turborepo)** environment.
+
+### 💡 Example Use Case
+
+The system is exemplified by its management of applications like **"Lane,"** an AI Voice Receptionist, which offers:
+
+- 📦 Tiered plans (e.g., "Lane Lite," "Lane Pro")
+- ⏱️ Included monthly voice minutes  
+- 🔄 Automated minute-pack top-up mechanism
+
+---
 
 ## 2. Core System Components
 
-The billing and entitlement architecture comprises several key interacting components:
+```mermaid
+graph TB
+    subgraph "External Services"
+        BEMS[🏢 Billing & Entitlement<br/>Management System]
+        AIProvider[🎙️ AI Voice Provider]
+        PaymentGW[💳 Payment Gateway<br/>Stripe]
+    end
+    
+    subgraph "Airodental Platform"
+        IAM[🔐 Identity & Access<br/>Management Platform]
+        Backend[⚙️ Airodental<br/>Application Backend]
+        DB[(💾 Database)]
+        Frontend[🖥️ Frontend Portal]
+    end
+    
+    subgraph "External Events"
+        Webhooks[📡 Webhook Events]
+    end
+    
+    Backend <--> BEMS
+    Backend <--> AIProvider
+    Backend <--> IAM
+    Backend <--> DB
+    Frontend <--> Backend
+    BEMS <--> PaymentGW
+    BEMS --> Webhooks
+    AIProvider --> Webhooks
+    Webhooks --> Backend
+    
+    style BEMS fill:#e1f5fe
+    style Backend fill:#f3e5f5
+    style IAM fill:#e8f5e8
+    style AIProvider fill:#fff3e0
+```
 
-### 2.1. Identity & Access Management (IAM) Platform
-Responsible for user authentication, organization structuring, and role-based access control. It provides unique identifiers for users and organizations, which are fundamental for linking entities to their respective billing accounts and entitlements within the BEMS.
+### 2.1. 🔐 Identity & Access Management (IAM) Platform
 
-### 2.2. Billing & Entitlement Management System (BEMS)
-This external, specialized system is the cornerstone of Airodental's commercial operations. Its responsibilities include:
-*   **Product Catalog Management:** Defining and managing service offerings, such as "Lane Lite," "Lane Pro," and "Minute Top-up Packs," including their pricing, recurring intervals, and associated features.
-*   **Subscription Lifecycle Management:** Orchestrating the entire subscription lifecycle (creation, activation, renewal, upgrades, downgrades, cancellation) through robust integration with an underlying payment processing gateway (e.g., Stripe).
-*   **Feature Entitlement & Balance Tracking:** Managing entitlements to specific features (e.g., `voice_minutes` for the "Lane" application) and tracking their consumption and available balances for each subscribed organization.
-*   **Service APIs:** Exposing a set of APIs for the Airodental backend to:
-    *   Initiate subscription checkouts.
-    *   Query feature access and current balances (`check_entitlement`).
-    *   Report feature usage (`track_usage`).
-    *   Adjust feature balances directly (`set_balance` or `grant_usage`).
-    *   Process one-time charges for add-ons like minute packs.
-*   **Webhook Egress:** Emitting events (e.g., `invoice.paid`, `subscription.renewed`) to notify the Airodental platform of significant billing lifecycle events.
+**Core Responsibilities:**
+- 👤 User authentication
+- 🏢 Organization structuring  
+- 🛡️ Role-based access control
+- 🆔 Unique identifier provision for billing linkage
 
-### 2.3. AI Voice Provider
-An external service providing the core AI-driven voice communication capabilities for applications like "Lane." It is responsible for:
-*   Provisioning and configuring individual AI assistant instances per subscribed organization.
-*   Handling real-time call processing.
-*   Emitting webhook events (e.g., `call.ended`) to the Airodental backend, providing critical data for usage metering, such as call start and end times.
+---
 
-### 2.4. Airodental Application Backend
-The central orchestrator within the Airodental monorepo. Its key functions include:
-*   Serving as the intermediary between the IAM Platform, BEMS, and the AI Voice Provider.
-*   Hosting secure webhook endpoints to receive and process events from both the BEMS and the AI Voice Provider.
-*   Implementing core business logic for:
-    *   User and organization provisioning.
-    *   Subscription initiation and management flows.
-    *   Mapping AI Voice Provider assistant instances to Airodental organizations/subscriptions.
-    *   Aggregating usage data (e.g., call minutes).
-    *   Implementing the automated minute pack top-up logic.
-    *   Managing and resetting local records of periodic usage and allowances.
+### 2.2. 🏢 Billing & Entitlement Management System (BEMS)
+
+> **The cornerstone of Airodental's commercial operations**
+
+#### 📋 Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **📦 Product Catalog Management** | Defining service offerings like "Lane Lite," "Lane Pro," and "Minute Top-up Packs" |
+| **🔄 Subscription Lifecycle** | Complete lifecycle management (creation → cancellation) |
+| **⚖️ Feature Entitlement & Balance Tracking** | Managing feature access and consumption tracking |
+| **🔌 Service APIs** | Comprehensive API suite for backend integration |
+| **📡 Webhook Egress** | Real-time event notifications |
+
+#### 🔌 API Capabilities
+
+```mermaid
+mindmap
+  root((BEMS APIs))
+    Subscriptions
+      Create
+      Update
+      Cancel
+    Usage
+      Track
+      Query
+      Reset
+    Entitlements
+      Check Access
+      Set Balance
+      Grant Usage
+    Billing
+      One-time Charges
+      Invoice Management
+```
+
+---
+
+### 2.3. 🎙️ AI Voice Provider
+
+**External service providing AI-driven voice communication capabilities**
+
+#### Core Functions:
+- 🚀 **Provisioning:** Individual AI assistant instances per organization
+- 📞 **Processing:** Real-time call handling
+- 📊 **Reporting:** Usage data via webhook events
+
+#### Event Flow:
+```mermaid
+sequenceDiagram
+    participant Call as 📞 Incoming Call
+    participant AI as 🎙️ AI Voice Provider
+    participant Backend as ⚙️ Backend
+    
+    Call->>AI: Initiate call
+    AI->>AI: Process conversation
+    AI->>Backend: call.ended webhook
+    Note over Backend: Duration: X minutes
+    Backend->>Backend: Update usage tracking
+```
+
+---
+
+### 2.4. ⚙️ Airodental Application Backend
+
+**The central orchestrator within the Airodental monorepo**
+
+#### 🎯 Key Functions:
+
+```mermaid
+graph LR
+    Backend[⚙️ Backend] --> IAM[🔐 IAM Integration]
+    Backend --> BEMS[🏢 BEMS Integration]
+    Backend --> AI[🎙️ AI Provider Integration]
+    Backend --> Webhooks[📡 Webhook Processing]
+    Backend --> Logic[🧠 Business Logic]
+    
+    Logic --> Provisioning[👥 User Provisioning]
+    Logic --> Subscription[📋 Subscription Management]
+    Logic --> Mapping[🗺️ Assistant Mapping]
+    Logic --> Usage[📊 Usage Aggregation]
+    Logic --> TopUp[🔄 Auto Top-up Logic]
+    Logic --> Reset[🔄 Usage Reset Management]
+```
+
+---
 
 ## 3. Database Schema (Billing & Entitlement Focus)
 
-The following simplified schema outlines key tables and fields within the Airodental platform's database, pertinent to billing and entitlements.
+> **Simplified schema highlighting key billing and entitlement tables**
+
+### 📊 Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    Organization ||--o{ Subscription : has
+    Subscription ||--o{ FeatureBalance : tracks
+    Subscription ||--o{ MinutePackPurchase : purchases
+    Subscription ||--o{ UsageLog : logs
+    Organization ||--|| VoiceAssistantConfig : configures
+
+    Organization {
+        string id PK
+        string bems_customer_id UK
+    }
+    
+    Subscription {
+        string id PK
+        string organizationId FK
+        string application_id
+        string bems_product_identifier
+        string bems_subscription_id UK
+        string status
+        datetime current_period_start
+        datetime current_period_end
+    }
+    
+    FeatureBalance {
+        string id PK
+        string subscriptionId FK
+        string feature_identifier
+        int base_allowance_monthly
+        int pack_allowance_current
+        int consumed_in_period
+        datetime last_reset_at
+    }
+    
+    UsageLog {
+        string id PK
+        string subscriptionId FK
+        string feature_identifier
+        int amount_consumed
+        datetime timestamp
+        string source_interaction_id
+    }
+    
+    MinutePackPurchase {
+        string id PK
+        string subscriptionId FK
+        int minutes_granted
+        int amount_charged_cents
+        string currency
+        datetime purchase_timestamp
+    }
+    
+    VoiceAssistantConfig {
+        string id PK
+        string organizationId FK
+        string ai_voice_provider_assistant_id UK
+    }
+```
+
+### 🗂️ Prisma Schema Definition
 
 ```prisma
-// Relevant subset of Airodental's Prisma Schema
+// 🗃️ Airodental's Prisma Schema - Billing & Entitlement Focus
 
 model Organization {
-  id                  String    @id @default(cuid()) // Primary Airodental Org ID
-  bems_customer_id    String    @unique // Maps to customer ID in BEMS
+  id                  String    @id @default(cuid()) // 🆔 Primary Airodental Org ID
+  bems_customer_id    String    @unique             // 🔗 Maps to customer ID in BEMS
   // ... other organization fields
   subscriptions       Subscription[]
+  
+  @@map("organizations")
 }
 
 model Subscription {
   id                      String    @id @default(cuid())
   organizationId          String
   organization            Organization @relation(fields: [organizationId], references: [id])
+  
+  // 📱 Application Configuration
   application_id          String    // e.g., "lane", "scheduler_app"
-  bems_product_identifier String    // Identifier for the plan in BEMS (e.g., "lane_lite_monthly_v1")
-  bems_subscription_id    String    @unique // Subscription ID from BEMS
-  status                  String    // e.g., "active", "past_due", "canceled"
+  bems_product_identifier String    // e.g., "lane_lite_monthly_v1"
+  bems_subscription_id    String    @unique
+  
+  // 📊 Status & Billing Cycle
+  status                  String    // "active", "past_due", "canceled"
   current_period_start    DateTime
   current_period_end      DateTime
+  
+  // 🔗 Related Records
   feature_balances        FeatureBalance[]
   minute_pack_purchases   MinutePackPurchase[]
   usage_logs              UsageLog[]
-  // ... other subscription fields (renewal date, etc.)
+  
+  @@map("subscriptions")
 }
 
 model FeatureBalance {
   id                      String      @id @default(cuid())
   subscriptionId          String
   subscription            Subscription @relation(fields: [subscriptionId], references: [id])
-  feature_identifier      String      // e.g., "voice_minutes", "premium_reports"
-  base_allowance_monthly  Int         // Allowance from the core subscription plan
-  pack_allowance_current  Int         @default(0) // Additional allowance from purchased packs this cycle
-  consumed_in_period      Int         @default(0) // Total consumed units this billing cycle
-  last_reset_at           DateTime    // When this feature's usage was last reset
-  // Unique constraint for a feature per subscription
+  
+  // 🎯 Feature Configuration
+  feature_identifier      String      // "voice_minutes", "premium_reports"
+  base_allowance_monthly  Int         // 📦 Base plan allowance
+  pack_allowance_current  Int         @default(0) // 🎁 Additional from packs
+  consumed_in_period      Int         @default(0) // 📊 Current usage
+  last_reset_at           DateTime    // 🔄 Last reset timestamp
+  
   @@unique([subscriptionId, feature_identifier])
+  @@map("feature_balances")
 }
 
 model UsageLog {
   id                      String    @id @default(cuid())
   subscriptionId          String
   subscription            Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  // 📊 Usage Details
   feature_identifier      String
   amount_consumed         Int
   timestamp               DateTime  @default(now())
-  source_interaction_id   String?   // e.g., AI Voice Provider Call ID
+  source_interaction_id   String?   // 🔗 e.g., AI Voice Provider Call ID
   notes                   String?
+  
+  @@map("usage_logs")
 }
 
 model MinutePackPurchase {
   id                      String    @id @default(cuid())
   subscriptionId          String
   subscription            Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  // 💰 Purchase Details
   minutes_granted         Int
   amount_charged_cents    Int
   currency                String    @default("USD")
-  bems_charge_identifier  String?   // Charge ID from BEMS/Payment Processor
+  bems_charge_identifier  String?   // 🔗 Payment processor charge ID
   purchase_timestamp      DateTime  @default(now())
+  
+  @@map("minute_pack_purchases")
 }
 
-// AI Voice Provider Assistant Configuration (Simplified for context)
 model VoiceAssistantConfig {
-  id                      String    @id @default(cuid())
-  organizationId          String    @unique // Links to Airodental Organization
-  // organization         Organization @relation(fields: [organizationId], references: [id])
-  ai_voice_provider_assistant_id String @unique
-  // ... other config fields
+  id                             String    @id @default(cuid())
+  organizationId                 String    @unique
+  ai_voice_provider_assistant_id String    @unique
+  
+  // ... other configuration fields
+  
+  @@map("voice_assistant_configs")
 }
-```
-
-## 4. Key Billing & Entitlement Flows
-
-### 4.1. New Application Subscription (e.g., "Lane")
-1.  **User Action:** A dental practice admin selects a plan (e.g., "Lane Lite") within the Airodental portal.
-2.  **Airodental Backend:**
-    *   Receives request with `organization_id` and target `bems_product_identifier`.
-    *   Calls BEMS API: `POST /subscriptions` (or equivalent `attach_product`) with `bems_customer_id` (derived from `organization_id`) and `bems_product_identifier`.
-3.  **BEMS & Payment Processor:**
-    *   BEMS interacts with the payment processor.
-    *   If payment is required (new customer or paid plan), BEMS returns a secure `checkout_url`.
-4.  **Airodental Frontend:** Redirects the user to the `checkout_url`.
-5.  **User Action:** User completes payment through the payment processor's interface.
-6.  **BEMS Webhook:** Payment processor notifies BEMS; BEMS sends a webhook (e.g., `invoice.paid` or `subscription.created`) to Airodental's `/webhooks/bems` endpoint.
-7.  **Airodental Backend (Webhook Handler):**
-    *   Verifies webhook signature.
-    *   Parses payload to identify `bems_customer_id`, `bems_subscription_id`, `bems_product_identifier`, and billing cycle dates.
-    *   Creates/updates `Subscription` record in Airodental DB.
-    *   Creates/updates `FeatureBalance` record for "voice_minutes":
-        *   Sets `base_allowance_monthly` based on the subscribed plan (e.g., 700 for Lane Lite).
-        *   Sets `pack_allowance_current = 0`, `consumed_in_period = 0`.
-        *   Sets `last_reset_at` to current billing period start.
-    *   Calls BEMS API: `POST /customers/{bems_customer_id}/balances` to initialize the "voice_minutes" feature balance in BEMS to the plan's base allowance.
-    *   If the subscribed app is "Lane", initiates provisioning of an AI Voice Provider assistant instance, storing its ID in `VoiceAssistantConfig`.
-
-### 4.2. Usage Tracking (e.g., "Lane" Voice Call Minutes)
-1.  **AI Voice Provider Event:** A call handled by a "Lane" assistant instance concludes.
-2.  **AI Voice Provider Webhook:** Sends a `call.ended` event (or similar) to Airodental's `/webhooks/voice` endpoint. Payload includes `ai_voice_provider_assistant_id`, call `start_time`, `end_time`.
-3.  **Airodental Backend (Webhook Handler):**
-    *   Verifies webhook signature.
-    *   Calculates `call_duration_minutes` (rounded up).
-    *   Retrieves `VoiceAssistantConfig` using `ai_voice_provider_assistant_id` to find the associated `organization_id`.
-    *   Finds the active "Lane" `Subscription` for the `organization_id`.
-    *   Calls BEMS API: `POST /usage/track` with `bems_customer_id`, `feature_id: "voice_minutes"`, `value: call_duration_minutes`.
-    *   Atomically updates Airodental DB:
-        *   Creates a `UsageLog` entry.
-        *   Increments `FeatureBalance.consumed_in_period` for "voice_minutes" by `call_duration_minutes`.
-    *   Triggers "Auto Top-up Check" (see section 4.3).
-
-### 4.3. Automated Minute Pack Top-Up
-This logic is executed after every `track_usage` event that consumes "voice_minutes".
-1.  **Airodental Backend:**
-    *   After processing usage from section 4.2, queries BEMS: `GET /customers/{bems_customer_id}/entitlements/voice_minutes` to get the real-time balance from the BEMS.
-    *   The BEMS returns the current effective balance (which accounts for base allowance, consumed usage, and any previously purchased packs within the current cycle).
-2.  **Balance Check:** If `bems_returned_balance <= 0` (or a configurable low-water mark, e.g., 10 minutes):
-    *   Initiate minute pack purchase.
-    *   Calls BEMS API: `POST /charges` (or `attach_product` for a one-time "Minute Pack" product) with `bems_customer_id` and the `bems_product_identifier` for the "$50 for 200 minutes" pack.
-3.  **BEMS & Payment Processor:**
-    *   BEMS attempts to charge the customer's default payment method immediately.
-4.  **BEMS Webhook (Pack Purchase Confirmation):**
-    *   If charge is successful, BEMS sends an `invoice.paid` (or specific add-on purchase event) webhook to Airodental's `/webhooks/bems` endpoint for the minute pack.
-5.  **Airodental Backend (Webhook Handler for Pack):**
-    *   Verifies webhook.
-    *   Creates a `MinutePackPurchase` record.
-    *   Fetches current "voice_minutes" balance from BEMS again (to ensure atomicity if multiple top-ups are near-simultaneous, though BEMS should handle this).
-    *   Calls BEMS API: `POST /customers/{bems_customer_id}/balances` to set the "voice_minutes" feature balance to `current_bems_balance + 200`. (Alternatively, if BEMS supports direct grants for one-time products, that could be used).
-    *   Updates Airodental DB: `FeatureBalance.pack_allowance_current += 200`.
-
-### 4.4. Monthly Subscription Renewal & Minute Reset
-1.  **BEMS Event:** A scheduled subscription (e.g., "Lane Lite") successfully renews for the next billing period.
-2.  **BEMS Webhook:** Sends a `subscription.renewed` or `invoice.paid` (for the renewal invoice) event to Airodental's `/webhooks/bems` endpoint.
-3.  **Airodental Backend (Webhook Handler):**
-    *   Verifies webhook.
-    *   Updates `Subscription` record with new `current_period_start` and `current_period_end`.
-    *   Resets local tracking for the "voice_minutes" `FeatureBalance`:
-        *   `consumed_in_period = 0`
-        *   `pack_allowance_current = 0`
-        *   `last_reset_at = new_current_period_start`
-    *   **BEMS is expected to automatically reset the base allowance for the "voice_minutes" feature** as per its product configuration (e.g., 700 minutes for Lane Lite). If BEMS does not do this automatically upon renewal, Airodental backend must explicitly call BEMS API: `POST /customers/{bems_customer_id}/balances` to set the "voice_minutes" balance to the plan's `base_allowance_monthly`.
-
-## 5. API Interaction Summary (Conceptual)
-
-### 5.1. Airodental Backend -> BEMS
-*   **Create/Attach Subscription:** `POST /api/bems/subscriptions`
-    *   Payload: `{ customer_id: string, product_id: string, success_url?: string, cancel_url?: string }`
-    *   Response: `{ checkout_url?: string, subscription_id?: string, status: string }`
-*   **Track Usage:** `POST /api/bems/usage/track`
-    *   Payload: `{ customer_id: string, feature_id: string, value: number, idempotency_key?: string }`
-    *   Response: `{ success: boolean, event_id?: string }`
-*   **Check Entitlement/Balance:** `GET /api/bems/customers/{customer_id}/entitlements/{feature_id}`
-    *   Response: `{ feature_id: string, balance: number, allowed: boolean, unlimited: boolean }`
-*   **Set/Grant Balance:** `POST /api/bems/customers/{customer_id}/balances`
-    *   Payload: `{ feature_id: string, balance: number }` or `{ feature_id: string, grant_value: number }` (depending on BEMS API design)
-    *   Response: `{ success: boolean, new_balance: number }`
-*   **Create One-Time Charge (for Minute Packs):** `POST /api/bems/charges`
-    *   Payload: `{ customer_id: string, product_id: string, quantity: number }` (if pack is a product) or `{ customer_id: string, amount_cents: number, currency: string, description: string }`
-    *   Response: `{ charge_id: string, status: string, invoice_url?: string }`
-
-### 5.2. BEMS -> Airodental Backend (Webhook Endpoint: `/api/webhooks/bems`)
-*   **Events:** `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `subscription.renewed`.
-*   Payloads vary by event but generally include `customer_id`, `subscription_id`, relevant product/invoice details.
-
-### 5.3. AI Voice Provider -> Airodental Backend (Webhook Endpoint: `/api/webhooks/voice`)
-*   **Events:** `call.ended`, `call.started`.
-*   Payload for `call.ended`: `{ call_id: string, assistant_id: string, start_timestamp: number, end_timestamp: number, duration_seconds: number, ... }`
-
-## 6. Data Integrity and Synchronization
-
-Maintaining consistency between Airodental's local database and the BEMS is critical.
-*   **Idempotent Webhook Handlers:** All webhook handlers must be designed to be idempotent to handle potential retries from the BEMS or AI Voice Provider without causing duplicate processing or data corruption.
-*   **Transactional Updates:** Local database updates related to billing events (e.g., updating `FeatureBalance` and creating `UsageLog`) should be performed within database transactions where possible.
-*   **Reconciliation:**
-    *   **Periodic Audits:** Implement scheduled jobs to periodically compare key metrics (e.g., active subscriptions, feature balances) between Airodental's DB and the BEMS via API calls.
-    *   **Manual Reconciliation Tools:** Provide administrative interfaces for super-admins to view discrepancies and trigger manual synchronization or correction actions.
-    *   **Error Queues:** Failed webhook processing or API calls to BEMS should be logged and potentially retried using a dead-letter queue or similar mechanism.
-
-## 7. Security Considerations
-
-*   **Webhook Security:** All incoming webhooks from BEMS and the AI Voice Provider must be secured using signature verification (e.g., HMAC-SHA256) to ensure authenticity and integrity.
-*   **API Key Management:** Secret keys for accessing BEMS APIs must be stored securely (e.g., using a secrets manager) and accessed only by authorized backend services.
-*   **Access Control:** Robust role-based access control (RBAC) within the Airodental platform, managed by the IAM Platform, must restrict access to billing-related data and administrative functions.
-*   **Data Minimization:** Only necessary billing-related PII should be stored in Airodental's primary database; sensitive payment details are handled and stored by the payment processor via BEMS.
 ```
 
 ---
 
-## Document 2: Airodental Billing System: How It Works
+## 4. Key Billing & Entitlement Flows
 
-```markdown
-# Airodental Billing System: How It Works
-
-Welcome to Airodental! We're committed to providing cutting-edge AI solutions for dental practices. To make managing your subscriptions and usage as simple and transparent as possible, we've designed a straightforward billing system. This overview explains how it works, especially for our applications like "Lane," the AI Voice Receptionist.
-
-## How Subscriptions Work
-
-Getting started with an Airodental application like Lane is easy:
-
-1.  **Choose Your Plan:** Your practice selects a plan that best fits its needs (e.g., Lane Lite or Lane Pro).
-2.  **Secure Payment:** You'll be guided through a secure payment process.
-3.  **Activation:** Once payment is confirmed, your subscription is activated, and you gain immediate access to the features included in your chosen plan.
-
-Each plan typically bills monthly and comes with a set amount of resources, like included call minutes for Lane.
-
-```mermaid
-graph TD
-    A[Practice Chooses Plan on Airodental.com] --> B{Provide Payment Information};
-    B --> C[Secure Payment Gateway Processes Payment];
-    C -- Payment Successful --> D[Subscription Activated in Billing System];
-    D --> E[Practice Gains Access to App Features & Included Resources];
-```
-
-## Tracking Your Usage (Example: Lane's Voice Minutes)
-
-We keep track of your resource usage to ensure you always know where you stand. For Lane, this means tracking voice call minutes:
-
-1.  **Call Handled:** When Lane (powered by our AI Voice Provider) handles a call for your practice, the duration is noted.
-2.  **System Update:** After the call ends, the AI Voice Provider informs the Airodental system about the call's length.
-3.  **Usage Deducted:** Our system then updates your account, deducting the used minutes from your monthly allowance.
-
-```mermaid
-graph TD
-    A[Patient Call with Lane App] --> B(AI Voice Provider Handles Call);
-    B -- Call Concludes --> C[AI Voice Provider Reports Call Duration to Airodental];
-    C --> D[Airodental System Updates Practice's Minute Usage];
-    D --> E(Billing & Entitlement System Logs Usage Against Allowance);
-```
-
-## Running Low on Minutes? Automatic Minute Packs
-
-We understand that your call volume can fluctuate. If your practice uses all its included monthly minutes for an application like Lane, our system is designed to help you continue service seamlessly:
-
-*   **Automatic Top-Up:** A "Minute Pack" (e.g., 200 extra minutes for a flat fee of $50) is automatically provisioned to your account.
-*   **Immediate Billing:** Your practice is billed for this pack right away, using your payment method on file.
-*   **Continued Service:** These extra minutes are immediately available for use for the remainder of your current monthly billing cycle.
+### 4.1. 🚀 New Application Subscription (e.g., "Lane")
 
 ```mermaid
 sequenceDiagram
-    participant PracticeCall as Practice Using Lane
-    participant AirodentalSystem as Airodental Platform
-    participant BillingSystem as Billing & Entitlement System
-
-    PracticeCall->>AirodentalSystem: Call consumes minutes
-    AirodentalSystem->>BillingSystem: Report minute usage
-    BillingSystem->>AirodentalSystem: Provide current minute balance
-    alt Minutes Allowance Exhausted
-        AirodentalSystem->>BillingSystem: Initiate Minute Pack Purchase
-        BillingSystem-->>AirodentalSystem: Confirm Pack Charged & Grant Extra Minutes
-        AirodentalSystem-->>PracticeCall: Additional minutes now available
-    else Minutes Still Available
-        AirodentalSystem-->>PracticeCall: Continue using base/pack minutes
+    participant User as 👤 Practice Admin
+    participant Portal as 🖥️ Airodental Portal
+    participant Backend as ⚙️ Backend
+    participant BEMS as 🏢 BEMS
+    participant Payment as 💳 Payment Processor
+    participant AI as 🎙️ AI Voice Provider
+    
+    User->>Portal: Select "Lane Lite" plan
+    Portal->>Backend: POST /subscriptions<br/>{org_id, product_id}
+    Backend->>BEMS: POST /subscriptions<br/>{customer_id, product_id}
+    
+    alt Payment Required
+        BEMS-->>Backend: {checkout_url}
+        Backend-->>Portal: Redirect to checkout
+        Portal-->>User: Payment form
+        User->>Payment: Complete payment
+        Payment->>BEMS: Payment confirmed
     end
+    
+    BEMS->>Backend: 📡 Webhook: subscription.created
+    Backend->>Backend: 💾 Create Subscription record
+    Backend->>Backend: 💾 Create FeatureBalance record
+    Backend->>BEMS: Initialize voice_minutes balance
+    Backend->>AI: 🚀 Provision assistant instance
+    Backend-->>Portal: ✅ Subscription active
 ```
 
-## Your Monthly Reset
+#### 📋 Detailed Steps:
 
-To keep things simple and predictable:
+1. **👤 User Action:** Practice admin selects plan (e.g., "Lane Lite")
 
-*   **Fresh Start:** At the beginning of each new monthly billing cycle, your base minute allowance (as per your Lane Lite or Lane Pro plan) is completely reset.
-*   **Expiration:** Any unused minutes from the previous month—whether they were part of your base plan or from a purchased Minute Pack—will expire. This policy ensures fair resource allocation and straightforward billing.
+2. **⚙️ Backend Processing:**
+   ```typescript
+   // Request structure
+   {
+     organization_id: "org_abc123",
+     bems_product_identifier: "lane_lite_monthly_v1"
+   }
+   ```
+
+3. **🏢 BEMS Integration:** Creates subscription with payment processor
+
+4. **💳 Payment Flow:** Secure checkout process
+
+5. **📡 Webhook Processing:** Handles `subscription.created` event
+
+6. **💾 Database Updates:**
+   - Create `Subscription` record
+   - Initialize `FeatureBalance` (700 minutes for Lane Lite)
+   - Set usage counters to zero
+
+7. **🚀 Service Provisioning:** AI assistant instance creation
+
+---
+
+### 4.2. 📊 Usage Tracking (e.g., "Lane" Voice Call Minutes)
 
 ```mermaid
-graph TD
-    A[New Monthly Billing Cycle Begins] --> B[Billing System Processes Subscription Renewal];
-    B --> C[Airodental Platform Resets Base Minute Allowance for the Practice];
-    C --> D[Any Unused Minutes (Base & Pack) from Previous Cycle Expire];
-    D --> E[Practice Starts New Month with Full Base Allowance];
+sequenceDiagram
+    participant Call as 📞 Patient Call
+    participant AI as 🎙️ AI Voice Provider
+    participant Backend as ⚙️ Backend
+    participant BEMS as 🏢 BEMS
+    
+    Call->>AI: Incoming call
+    AI->>AI: Handle conversation
+    AI->>Backend: 📡 Webhook: call.ended<br/>{duration, assistant_id}
+    
+    Backend->>Backend: 📊 Calculate minutes (rounded up)
+    Backend->>Backend: 🔍 Find organization & subscription
+    Backend->>BEMS: 📈 Track usage<br/>POST /usage/track
+    
+    parallel
+        Backend->>Backend: 💾 Create UsageLog entry
+    and
+        Backend->>Backend: 📊 Update FeatureBalance.consumed
+    end
+    
+    Backend->>Backend: 🔍 Check if auto top-up needed
 ```
 
-## Benefits for Your Practice
+#### 🔧 Implementation Details:
 
-*   **Predictable Costs:** Clear, upfront monthly subscription fees.
-*   **Uninterrupted Service:** Automatic minute packs mean your AI services keep running even during busy periods.
-*   **Flexibility:** Easily accommodate higher call volumes when necessary.
-*   **Transparency:** Manage your subscription, view usage, and access billing history anytime through your Airodental portal.
+```typescript
+// Webhook payload structure
+interface CallEndedPayload {
+  call_id: string;
+  assistant_id: string;
+  start_timestamp: number;
+  end_timestamp: number;
+  duration_seconds: number;
+}
 
-We aim to make your experience with Airodental's AI tools and billing system as smooth and efficient as possible, so you can focus on providing excellent care to your patients.
+// Usage calculation
+const minutes = Math.ceil(duration_seconds / 60);
 ```
+
+---
+
+### 4.3. 🔄 Automated Minute Pack Top-Up
+
+> **Seamless service continuation through intelligent top-up automation**
+
+```mermaid
+flowchart TD
+    A[📊 Usage Event Processed] --> B{Check Current Balance}
+    B -->|Balance > 10 min| C[✅ Continue Normal Operation]
+    B -->|Balance ≤ 10 min| D[🚨 Trigger Auto Top-up]
+    
+    D --> E[💳 Charge Minute Pack<br/>$50 for 200 minutes]
+    E --> F{Payment Success?}
+    
+    F -->|✅ Success| G[📡 BEMS Webhook:<br/>invoice.paid]
+    F -->|❌ Failed| H[🚫 Service Suspension<br/>Notification Sent]
+    
+    G --> I[💾 Create MinutePackPurchase]
+    I --> J[📊 Update FeatureBalance<br/>+200 minutes]
+    J --> K[✅ Service Continues]
+    
+    style D fill:#ffebee
+    style G fill:#e8f5e8
+    style H fill:#ffcdd2
+    style K fill:#c8e6c9
+```
+
+#### 📋 Process Flow:
+
+1. **📊 Balance Check:**
+   ```typescript
+   const balance = await BEMS.getBalance(customer_id, 'voice_minutes');
+   const threshold = 10; // configurable low-water mark
+   
+   if (balance <= threshold) {
+     await initiateTopUp();
+   }
+   ```
+
+2. **💳 Automated Purchase:**
+   ```json
+   {
+     "customer_id": "cust_abc123",
+     "product_id": "minute_pack_200_usd50",
+     "quantity": 1
+   }
+   ```
+
+3. **📡 Webhook Confirmation:** Process `invoice.paid` event
+
+4. **💾 Database Updates:**
+   - Create `MinutePackPurchase` record
+   - Update `FeatureBalance.pack_allowance_current += 200`
+
+---
+
+### 4.4. 🔄 Monthly Subscription Renewal & Minute Reset
+
+```mermaid
+gantt
+    title Monthly Billing Cycle
+    dateFormat  YYYY-MM-DD
+    section Billing Cycle
+    Current Period    :active, period1, 2024-01-01, 2024-01-31
+    Usage Tracking    :tracking, 2024-01-01, 2024-01-31
+    section Renewal
+    Auto Renewal      :milestone, renewal, 2024-02-01, 0d
+    Reset Allowances  :reset, 2024-02-01, 1d
+    section New Period
+    Fresh Cycle       :period2, 2024-02-01, 2024-02-29
+```
+
+#### 🔄 Renewal Process:
+
+```mermaid
+sequenceDiagram
+    participant BEMS as 🏢 BEMS
+    participant Backend as ⚙️ Backend
+    participant DB as 💾 Database
+    
+    BEMS->>Backend: 📡 subscription.renewed webhook
+    Backend->>Backend: ✅ Verify webhook signature
+    
+    Backend->>DB: 📊 Update Subscription
+    Note over DB: current_period_start/end
+    
+    Backend->>DB: 🔄 Reset FeatureBalance
+    Note over DB: consumed_in_period = 0<br/>pack_allowance_current = 0<br/>last_reset_at = now()
+    
+    Backend->>BEMS: 🔄 Reset base allowance
+    Note over BEMS: voice_minutes = 700 (Lane Lite)
+    
+    Backend-->>Backend: ✅ Renewal complete
+```
+
+---
+
+## 5. API Interaction Summary (Conceptual)
+
+### 5.1. 🔌 Airodental Backend ↔ BEMS
+
+#### 📤 Outbound API Calls
+
+| Endpoint | Method | Purpose | Example Payload |
+|----------|--------|---------|-----------------|
+| `/api/bems/subscriptions` | `POST` | Create subscription | `{"customer_id": "cust_123", "product_id": "lane_lite"}` |
+| `/api/bems/usage/track` | `POST` | Report usage | `{"customer_id": "cust_123", "feature_id": "voice_minutes", "value": 5}` |
+| `/api/bems/customers/{id}/entitlements/{feature}` | `GET` | Check balance | - |
+| `/api/bems/customers/{id}/balances` | `POST` | Set balance | `{"feature_id": "voice_minutes", "balance": 700}` |
+| `/api/bems/charges` | `POST` | One-time charge | `{"customer_id": "cust_123", "amount_cents": 5000}` |
+
+#### 📥 Webhook Events
+
+```typescript
+// Event types from BEMS
+interface BEMSWebhookEvents {
+  'invoice.paid': InvoicePaidEvent;
+  'invoice.payment_failed': PaymentFailedEvent;
+  'subscription.created': SubscriptionCreatedEvent;
+  'subscription.updated': SubscriptionUpdatedEvent;
+  'subscription.renewed': SubscriptionRenewedEvent;
+  'subscription.canceled': SubscriptionCanceledEvent;
+}
+```
+
+---
+
+### 5.2. 🎙️ AI Voice Provider → Airodental Backend
+
+#### 📡 Webhook Events
+
+```typescript
+interface VoiceProviderEvents {
+  'call.started': {
+    call_id: string;
+    assistant_id: string;
+    start_timestamp: number;
+  };
+  
+  'call.ended': {
+    call_id: string;
+    assistant_id: string;
+    start_timestamp: number;
+    end_timestamp: number;
+    duration_seconds: number;
+    // Additional call metadata...
+  };
+}
+```
+
+---
+
+## 6. Data Integrity and Synchronization
+
+> **Ensuring consistency between Airodental's database and external systems**
+
+### 🛡️ Core Principles
+
+```mermaid
+mindmap
+  root((Data Integrity))
+    Idempotency
+      Webhook Handlers
+      API Calls
+      Database Operations
+    Transactions
+      Atomic Updates
+      Rollback Capability
+      Consistency Checks
+    Reconciliation
+      Periodic Audits
+      Manual Tools
+      Error Queues
+    Monitoring
+      Real-time Alerts
+      Health Checks
+      Performance Metrics
+```
+
+### 🔄 Idempotent Webhook Handlers
+
+```typescript
+// Example idempotent webhook handler
+async function handleSubscriptionCreated(payload: WebhookPayload) {
+  const { subscription_id } = payload;
+  
+  // Check if already processed
+  const existing = await db.subscription.findUnique({
+    where: { bems_subscription_id: subscription_id }
+  });
+  
+  if (existing) {
+    logger.info(`Subscription ${subscription_id} already processed`);
+    return; // Idempotent - no duplicate processing
+  }
+  
+  // Transactional processing
+  await db.$transaction(async (tx) => {
+    await tx.subscription.create({ /* ... */ });
+    await tx.featureBalance.create({ /* ... */ });
+  });
+}
+```
+
+### 📊 Reconciliation Strategies
+
+| Strategy | Frequency | Purpose |
+|----------|-----------|---------|
+| **🔍 Periodic Audits** | Daily | Compare key metrics between systems |
+| **🔧 Manual Tools** | On-demand | Admin-triggered synchronization |
+| **⚠️ Error Queues** | Real-time | Retry failed operations |
+| **📈 Health Checks** | Continuous | Monitor system consistency |
+
+---
+
+## 7. Security Considerations
+
+### 🔒 Security Framework
+
+```mermaid
+graph TB
+    subgraph "🛡️ Security Layers"
+        A[🔐 Webhook Security]
+        B[🗝️ API Key Management]  
+        C[👥 Access Control]
+        D[📊 Data Minimization]
+    end
+    
+    subgraph "🔐 Webhook Security"
+        A1[HMAC-SHA256 Verification]
+        A2[Request Validation]
+        A3[Rate Limiting]
+    end
+    
+    subgraph "🗝️ Key Management"
+        B1[Secret Manager]
+        B2[Key Rotation]
+        B3[Least Privilege]
+    end
+    
+    subgraph "👥 RBAC"
+        C1[Role Definition]
+        C2[Permission Matrix]
+        C3[Audit Logging]
+    end
+    
+    subgraph "📊 Data Protection"
+        D1[PII Minimization]
+        D2[Encryption at Rest]
+        D3[Secure Transit]
+    end
+    
+    A --> A1 & A2 & A3
+    B --> B1 & B2 & B3  
+    C --> C1 & C2 & C3
+    D --> D1 & D2 & D3
+```
+
+### 🔐 Implementation Details
+
+#### Webhook Security
+```typescript
+// HMAC signature verification
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+    
+  return crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
+}
+```
+
+#### Access Control Matrix
+| Role | Billing Data | Admin Functions | User Data |
+|------|--------------|-----------------|-----------|
+| **Super Admin** | ✅ Full Access | ✅ All Functions | ✅ All Organizations |
+| **Org Admin** | ✅ Own Org Only | ❌ Limited | ✅ Own Org Only |
+| **User** | ❌ Read Only | ❌ None | ✅ Own Data Only |
+
+---
+
+### 📚 Additional Resources
+
+For implementation details and extended documentation, refer to:
+
+- 📖 [BEMS API Documentation](./docs/bems-api.md)
+- 🎙️ [AI Voice Provider Integration Guide](./docs/voice-provider.md)
+- 🔧 [Deployment & Operations Manual](./docs/deployment.md)
+- 🧪 [Testing Strategy](./docs/testing.md)
+
+---
+
+**📝 Document Version:** 2.0  
+**🗓️ Last Updated:** December 2024  
+**👥 Maintainers:** Airodental Platform Team
