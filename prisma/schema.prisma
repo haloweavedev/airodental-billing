@@ -1,0 +1,24 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// No custom models needed for Phase 1 core billing flow.
+// Clerk handles users/orgs. Autumn handles subscriptions.
+// We can add models here later if Laine needs to store
+// additional organization-specific data not managed by Clerk/Autumn.
+
+// Example placeholder (optional, can be removed if causing issues):
+// model Placeholder {
+//   id        String   @id @default(cuid())
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// } 
