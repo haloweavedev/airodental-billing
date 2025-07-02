@@ -83,6 +83,9 @@ export default function RootLayout({
                       <Link href="/dashboard/team" className="text-sm hover:text-primary transition-colors">
                         Team
                       </Link>
+                      <Link href="/dashboard/settings" className="text-sm hover:text-primary transition-colors">
+                        Settings
+                      </Link>
                     </SignedIn>
                   </nav>
                 </div>
