@@ -77,8 +77,11 @@ export default function RootLayout({
                       <Link href="/laine" className="text-sm hover:text-primary transition-colors">
                         Laine Assistant
                       </Link>
-                      <Link href="/usage" className="text-sm hover:text-primary transition-colors">
-                        Usage
+                      <Link href="/dashboard/billing" className="text-sm hover:text-primary transition-colors">
+                        Billing
+                      </Link>
+                      <Link href="/dashboard/team" className="text-sm hover:text-primary transition-colors">
+                        Team
                       </Link>
                     </SignedIn>
                   </nav>

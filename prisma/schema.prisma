@@ -7,18 +7,76 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// No custom models needed for Phase 1 core billing flow.
-// Clerk handles users/orgs. Autumn handles subscriptions.
-// We can add models here later if Laine needs to store
-// additional organization-specific data not managed by Clerk/Autumn.
+model Practice {
+  // Core Fields
+  id                    String   @id @default(cuid())
+  clerkOrganizationId   String   @unique
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-// Example placeholder (optional, can be removed if causing issues):
-// model Placeholder {
-//   id        String   @id @default(cuid())
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-// } 
+  // [1] PRACTICE IDENTITY
+  name                  String
+  address               String?
+  city                  String?
+  state                 String?
+  locationContext       String?
+  directions            String?
+  doctors               Json?
+  hygienists            Json?
+
+  // [2] OFFICE LOGISTICS & CULTURE
+  tone                  String   @default("warm, professional, human")
+  offTopicResponse      String?
+  seesKids              Boolean  @default(false)
+  acceptsWalkIns        String?
+  vendorCallPolicy      String?
+  offersSameDayTreatment Boolean @default(false)
+
+  // [3] NEW PATIENT SCHEDULING FLOW
+  newPatientFlow                String?
+  newPatientSpecialOffer        Boolean @default(false)
+  newPatientSpecialDetails      String?
+  mentionSpecialOfferProactively Boolean @default(false)
+
+  // [4] INSURANCE PARTICIPATION
+  inNetworkPPOs                 String[]
+  deltaDentalTier               String?
+  deltaDentalOutOfNetworkDetails String?
+  acceptsMedicaid               Boolean @default(false)
+  medicaidStateName             String?
+  medicaidNotAcceptedPhrase     String?
+  acceptsHMO_DMO                Boolean @default(false)
+  hmoDmoNotAcceptedPhrase       String?
+  dualInsuranceNotes            String?
+  inHouseSavingsPlanDetails     String?
+
+  // [5] INSURANCE HANDLING DETAILS
+  collectInsuranceCompany       Boolean @default(true)
+  collectSubscriberName         Boolean @default(true)
+  collectSubscriberDob          Boolean @default(true)
+  collectInsuranceId            Boolean @default(true)
+  collectGroupId                Boolean @default(true)
+  collectSubscriberEmployer     Boolean @default(true)
+  confirmNameSpelling           Boolean @default(true)
+  validateNumbers               Boolean @default(true)
+
+  // [6] APPOINTMENT TYPES TO OFFER
+  offeredAppointmentTypes       String[]
+
+  // [7] SCHEDULING LOGISTICS
+  schedulingTimeframeLimit      String?
+  schedulingPriority            String   @default("First availability")
+  appointmentOfferSequence      Json?
+
+  // [8] ADDITIONAL PROMPTS & EDGE CASES
+  promptForFamilyScheduling     Boolean @default(false)
+  handleInsuranceNotOnFile      String?
+  handleQuoteRequest            String?
+  handleGeneralQuestion         String?
+  handleSpecificProviderRequest String?
+} 

@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   '/', 
@@ -7,9 +8,20 @@ const isPublicRoute = createRouteMatcher([
   '/api/vapi/webhook(.*)'
 ]);
 
+const isOnboardingRoute = createRouteMatcher(['/onboarding(.*)']);
+
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
     await auth.protect();
+    
+    // After protecting the route, check if user needs onboarding
+    const { orgId } = await auth();
+    
+    // If user has no organization and is not on onboarding route, redirect to onboarding
+    if (!orgId && !isOnboardingRoute(request)) {
+      const onboardingUrl = new URL('/onboarding', request.url);
+      return NextResponse.redirect(onboardingUrl);
+    }
   }
 });
 
