@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Practice } from '@prisma/client';
-import { OnboardingProvider, useOnboarding } from '@/contexts/onboarding-context';
+import { useOnboarding } from '@/contexts/onboarding-context';
 import { PracticeIdentityForm } from '@/components/onboarding/practice-identity-form';
 import { updatePracticeSettings } from '@/app/dashboard/settings/actions';
 
@@ -10,8 +10,76 @@ interface SettingsClientPageProps {
   practice: Practice;
 }
 
-function SettingsForm() {
-  const { formData } = useOnboarding();
+function SettingsForm({ practice }: { practice: Practice }) {
+  const { formData, setFormData } = useOnboarding();
+
+  // Initialize form data with practice data on mount
+  React.useEffect(() => {
+    const initialFormData = {
+      // [1] PRACTICE IDENTITY
+      name: practice.name || '',
+      address: practice.address || '',
+      city: practice.city || '',
+      state: practice.state || '',
+      locationContext: practice.locationContext || '',
+      directions: practice.directions || '',
+      doctors: (practice.doctors as { text?: string })?.text || '',
+      hygienists: (practice.hygienists as { text?: string })?.text || '',
+
+      // [2] OFFICE LOGISTICS & CULTURE
+      tone: practice.tone || 'warm, professional, human',
+      offTopicResponse: practice.offTopicResponse || '',
+      seesKids: practice.seesKids || false,
+      acceptsWalkIns: practice.acceptsWalkIns || '',
+      vendorCallPolicy: practice.vendorCallPolicy || '',
+      offersSameDayTreatment: practice.offersSameDayTreatment || false,
+
+      // [3] NEW PATIENT SCHEDULING FLOW
+      newPatientFlow: practice.newPatientFlow || '',
+      newPatientSpecialOffer: practice.newPatientSpecialOffer || false,
+      newPatientSpecialDetails: practice.newPatientSpecialDetails || '',
+      mentionSpecialOfferProactively: practice.mentionSpecialOfferProactively || false,
+
+      // [4] INSURANCE PARTICIPATION
+      inNetworkPPOs: practice.inNetworkPPOs || [],
+      deltaDentalTier: practice.deltaDentalTier || '',
+      deltaDentalOutOfNetworkDetails: practice.deltaDentalOutOfNetworkDetails || '',
+      acceptsMedicaid: practice.acceptsMedicaid || false,
+      medicaidStateName: practice.medicaidStateName || '',
+      medicaidNotAcceptedPhrase: practice.medicaidNotAcceptedPhrase || '',
+      acceptsHMO_DMO: practice.acceptsHMO_DMO || false,
+      hmoDmoNotAcceptedPhrase: practice.hmoDmoNotAcceptedPhrase || '',
+      dualInsuranceNotes: practice.dualInsuranceNotes || '',
+      inHouseSavingsPlanDetails: practice.inHouseSavingsPlanDetails || '',
+
+      // [5] INSURANCE HANDLING DETAILS
+      collectInsuranceCompany: practice.collectInsuranceCompany ?? true,
+      collectSubscriberName: practice.collectSubscriberName ?? true,
+      collectSubscriberDob: practice.collectSubscriberDob ?? true,
+      collectInsuranceId: practice.collectInsuranceId ?? true,
+      collectGroupId: practice.collectGroupId ?? true,
+      collectSubscriberEmployer: practice.collectSubscriberEmployer ?? true,
+      confirmNameSpelling: practice.confirmNameSpelling ?? true,
+      validateNumbers: practice.validateNumbers ?? true,
+
+      // [6] APPOINTMENT TYPES TO OFFER
+      offeredAppointmentTypes: practice.offeredAppointmentTypes || [],
+
+      // [7] SCHEDULING LOGISTICS
+      schedulingTimeframeLimit: practice.schedulingTimeframeLimit || '',
+      schedulingPriority: practice.schedulingPriority || 'First availability',
+      appointmentOfferSequence: (practice.appointmentOfferSequence as { text?: string })?.text || '',
+
+      // [8] ADDITIONAL PROMPTS & EDGE CASES
+      promptForFamilyScheduling: practice.promptForFamilyScheduling || false,
+      handleInsuranceNotOnFile: practice.handleInsuranceNotOnFile || '',
+      handleQuoteRequest: practice.handleQuoteRequest || '',
+      handleGeneralQuestion: practice.handleGeneralQuestion || '',
+      handleSpecificProviderRequest: practice.handleSpecificProviderRequest || '',
+    };
+
+    setFormData(initialFormData);
+  }, [practice, setFormData]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -77,9 +145,5 @@ function SettingsForm() {
 }
 
 export function SettingsClientPage({ practice }: SettingsClientPageProps) {
-  return (
-    <OnboardingProvider initialData={practice}>
-      <SettingsForm />
-    </OnboardingProvider>
-  );
+  return <SettingsForm practice={practice} />;
 } 
